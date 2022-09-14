@@ -72,8 +72,8 @@ So, now let's push those values, and by that create our socketadress struck on t
 Those are the memory address of function I used and "relevant" memory addresses on the stack. 
 using GDB and IDA, I could debug my core files causing by crashing the server (part A), and find all the relevant addresses on the stack and on the source code (this is also very similar to what I done in the BOF ex). 
 
-
-
+### Small Tip:
+you can write a c program that does what you want (like, connecting to a remote server), compile it, and then RE to see the assembly instructions and function you use and go on from there. This what I did here and it help a lot with the structs parts. 
 
 
 
