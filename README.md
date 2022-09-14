@@ -46,5 +46,51 @@ Our C&C server will listen on **port 1337**
 ![image](https://user-images.githubusercontent.com/112778430/190276355-218dc332-b04b-4247-8b93-d2e1b30b513a.png)
 . 
 # Part B
+In the python program (q2.py) , we are going to build a payload for a message that we will send to server, which going cause a buffer overflow, and then RCE. 
+
+For that we'll need to write some assembly. we'll get that in a second, but lets take a look at our massage: 
+
+**The message is going to look as so:**
+*4 bytes indicating the leangth of our msg- in our case 1045* + *some_nop_padding* + *our assembly shell code* + *null terminator*.
+
+lets dive in to the assembly shellcode:
+![image](https://user-images.githubusercontent.com/112778430/190277272-897d90a9-e2f1-4379-b823-24362f72bec7.png)
+
+
+1. First, we are going to take esp and move it right before our buffer. this will prevent some issues regarding the fact that the stack is going downward, and may override our code during the calls some functions. (btw- this actually took me about 2 hours to understand. I got weird behavior with my shellcode and couldn't understand why).
+2. Then we are creating a new socket at the server side that is going to use as way to connect to our C&C server. for that, we are pushing to the stack the arguments, and calling the socket function, at adsress-0x8048730. We will get a socket fd from that, and will store it ecx. 
+3. Now, we are going to call the connect function. The arguments are the the socketfd (which we got from the socket function, and is currently stored in ecx), pointer to socketadress struct (we'll get that in a second) and the address length. this is constant -0x10. we will push those onto the stack, and then call the connect function at address 0x08048750.
+
+**about the socketadrdress struct**- this struct structure is as follows: first two bytes of sin_family (this is set to 0x2), and then 2 bytes of port we are going to use (also constant in our example, because we are going to connect to port 1337, which is 0x3905), and finally the address of the server we are going to connect to, as it was outputted from the init address function. After running the c code, I found out that for 127.0.0.1, this is going to be set to 0x100007F. 
+So, now let's push those values, and by that create our socketadress struck on the stack.
+
+4. Then, we are moving esp to ebx, which means that ebx is going to be the address of the struct we just built. 
+5. After that, we are going call dup2, at address 0x8048600 3 times- one for stdin, one for stdout, and one for sdterr. for each of those, we are going to redirect them to our socketfd. This way, we can control the remote shell from our C&C server.
+6. Finally, we are going to open a shell on the server, using a call to execv on address 0x80486D0. the arguments to those call: a pointer to the string /bin/sh and a pointer to an array of {/bin/sh, 0000}. This part is done in a similar way to our previous exercise (BOF). 
+
+### How did I got those memory address? 
+Those are the memory address of function I used and "relevant" memory addresses on the stack. 
+using GDB and IDA, I could debug my core files causing by crashing the server (part A), and find all the relevant addresses on the stack and on the source code (this is also very similar to what I done in the BOF ex). 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+
 
 
