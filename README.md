@@ -79,10 +79,14 @@ you can write a c program that does what you want (like, connecting to a remote 
 
 
 
+```mermaid
+classDiagram BT 
+A(NOP slide)
+A --> C(Decoder code) 
+C --> D(Encoded shellcode) 
+D --> E(New return address)
 
-
-
-
+```
 
 
 
