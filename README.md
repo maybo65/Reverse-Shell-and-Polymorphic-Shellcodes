@@ -76,25 +76,44 @@ using GDB and IDA, I could debug my core files causing by crashing the server (p
 you can write a c program that does what you want (like, connecting to a remote server), compile it, and then RE to see the assembly instructions and function you use and go on from there. This what I did here and it help a lot with the structs parts. 
 
 
+# Part C
+Now that you understood how to open a remote shell, let’s do it again under one constraint - **the entire shellcode is going to be in ASCII.** This means that except for the first 4 bytes (message length) and last 4 bytes (new return address), all other bytes should be valid ASCII - i.e. with values lower than 0x80 (at most 0x7f).
+
+## Why we care about this constraint?
+well, this is an actually really common demand from websites, application and etc. that takes input from the user, in order to prevent different injections attacks. 
+
+## Can we write our shellcode in ASCII?
+well, yes or no. If we take a look at our shellcode, it contains a lot of chars with much higher values then 0x80. Even if we could replace all of our instruction with instruction that coded with chars under 0x80, we still have the memory address which we can't control. we could probably work very hard and find new instruction, and build all the memory address using mul and add commands with small numbers, but we will do something much more cool here.  
+
+## Polymorphic-Shellcodes
+We will “encode” the shellcode we wrote on part B to ASCII chars and then, after we will inject it, we will dynamically “decode” it at runtime. Specifically, we’ll put the decoder directly before the encoded shellcode, so when it finishes, the next instruction will simply be the (decoded) shellcode. Here’s how it will look like:
 
 
-
-```mermaid
-classDiagram BT 
-A(NOP slide)
-A --> C(Decoder code) 
-C --> D(Encoded shellcode) 
-D --> E(New return address)
-
-```
+![image](https://user-images.githubusercontent.com/112778430/190828149-4094721d-ba79-4fc1-825f-239f058f4ff0.png)
 
 
+### The method we will use for encoding/decoding is as follows:
 
+-   The encoding will XOR every non ASCII byte (i.e. >=0x80) with 0xff
+-   The decoder is going to be a series of XOR instructions, to decode the memory in the XOR-red locations
+   -   While encoding, we will keep track of the indices that were XOR-ed ,then use the same indices to generate the decoder code.
+-   Note that our encoding keeps the shellcode at the same length
+-   The decoder grows in size as more bytes are XOR-ed, but the encoded data stays in the same length as the original data
 
+## Final Payload with Polymorphic-Shellcode
+We will build our payload as follows:
+*4 bytes indicating the length of our msg- in our case 1045* + *some_nop_padding* + *decoder code* +*our ENCODED assembly shell code* + *null terminator*.
 
+to get the encoded assembly shell code, we will use an encode function that iterating over the code, xoring each byte with a value grater then 0x7F with 0xFF (which will make it a valid ascii char), and creating a list of all the changed indices. 
+The output of this function will be used as the encoded assembly shell code (inside q3.py). 
 
+After that, we are building the decoder code using the list of the indices of the changed bytes, in the get_decoder_code function. the output of this function will be the decoder code. 
 
- 
+then, the get_ascii_shellcode will output the sellcode that will be using us to the attack, with the encoded ascii shell code and the decoder code. 
 
+finally, we are building the payload as before (in q2), but instead of using a nop slide, we are using the command dec ebx. this is simply because the value of nop is 0x90, which is not ASCII.
+so, instead of nop instruction, we will do some instruction that irrelevant for us, which is equivalents to nop. we will change the value of ebx over and over (in our shellcode we are nullify it anyway- so it doesn't matter).
+
+And that it! 😊
 
 
