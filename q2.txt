@@ -1,0 +1,30 @@
+In the python program, we are building a payload for a message that we are going to send the server, that are going cause a buffer overflow, and then RCE. the message is going to look like that:
+*4 bytes indicating the leangth of our msg- in our case 1045* + *some_nop_padding* + *our assembly shell code* + *null terminator*.
+lets dive in to the assembly shellocde:
+first, we are going to take esp and move it right before our buffer. this will prevent some issues regarding the fact that the stack is going downward, and may override our code during the calls some functions.
+Then we are creating a new socket at the server side that is going to use as way to connent to our c&c server. for that, we are pushing to the stack the arguments, and calling the socket function, at adsress-0x8048730. we will get a socket fd from that, and will store it ecx). 
+then we are going to call the connect function. the arguments are the the socketfd (which we got from the socket function, and is currently stored in ecx), pointer to socketadress struct (we'll get that in a second) and the address length. this is constant -0x10. we will push those onto the stack, and then call the connect function at address 0x08048750.
+about the socketadrdress struct- this struct structure is as follows: first two bytes of sin_family (this is set to 0x2), and then 2 bytes of port we are going to use (also constact in our exemple, because we are going to connect to port 1337, which is 0x3905), and finally the address of the server we are going to connect to, as it was outputed from the init address function. after running the c code, i found out that for 127.0.0.1, this is going to be set to 0x100007F. We are goiing to push those valuses, and by that creating our socketadress struck on the stack.Then, we are moving esp to ebX, which means that ebx is going to be the address of the struct we just built. 
+After that, we are going call dup2, at address 0x8048600 3 times- one for stdin, one for stdout, and one for sdterr. for each of those, we are going to redirect them to our socketfd. 
+Finally, we are going to open a shell on the server, using a call to execv on address 0x80486D0. the arguments to those call: a pointer to the string /bin/sh and a pointer to an array of {/bin/sh, 0000}. this part is done in a similar way to our preveious exercise on bof.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+

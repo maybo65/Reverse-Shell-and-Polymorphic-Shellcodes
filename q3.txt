@@ -1,0 +1,6 @@
+here, we will build our payload as follows:
+*4 bytes indicating the leangth of our msg- in our case 1045* + *some_nop_padding* + *decoder code* +*our ENCODED assembly shell code* + *null terminator*.
+to get the encoded assembly shell code, we will use an ecnode functiong that iterating over the code, xoring each byte with a value grater then x7f with xff (which will make it a valid ascii char), and creating a list of all the changed indices. the output of this func will be used as the encoded assembly shell code. 
+after that, we are building the decoder code using the list ofthe indices of the changed bytes, in the get_decoder_code function. the output of this func will be the deocder code. 
+then, the get_ascii_shellcode will output the sellcode that will be using us to the attack, with the enocded ascii shell code and the decoder code. 
+finally, we are building the payload as before (in q2), but instead of using a nop slide, we are using the command dec ebx. this is also 1 byte command, and not changing out code, so this can be used pretty easily as a nop slide
